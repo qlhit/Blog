@@ -1,0 +1,148 @@
+#!/bin/ksh
+# deploy fidessa component
+#
+
+function CreateLinkedFiles
+{
+  #srcdir=$1
+  #targetdir=$2
+
+  if [ $# -lt 2 ];then
+    echo "Error: Usage: CreateLinkedFiles <srcdir> <targetdir>"
+    exit 3
+  fi
+
+  if [ ! -d "$1" ]; then
+     echo "Error: $1 directory does not exist."
+     exit 1
+  fi
+  if [ -f "$2" ]; then
+     echo "Error: $2 can't be an existing file."
+     exit 2
+  fi
+  
+  echo "Setup directory: $2"
+  mkdir -p "$2"
+  chmod u+w "$2"
+
+  for afile in `ls "$1"` 
+  do
+    if [ "$1/$afile" = "$dirccms/classes/mqm" ]; then
+      ln -sf "$1/$afile" "$2/$afile"
+      echo "Create link dir:  $2/$afile"
+      continue
+    fi   
+    if [ -f "$1/$afile" ]; then
+      ln -sf "$1/$afile" "$2/$afile"
+      echo "Create link file:  $2/$afile"
+      #ls -l "$2/$afile"
+    elif  [ -d "$1/$afile" ]; then
+      CreateLinkedFiles "$1/$afile"  "$2/$afile"
+    else
+      echo "Error: unhandled file: $1/$afile."
+    fi
+  done
+}
+
+function CreateLinkedDirs
+{
+  if [ $# -ne 2 ];then
+    echo "Error: Usage: CreateLinkedDirs <srcdir> <targetdir>"
+    exit 3
+  fi
+
+  if [ ! -d "$1" ]; then
+     echo "Error: $1 does not exist."
+     exit 1
+  fi
+  if [ -f "$2" ]; then
+     echo "Error: $2 can't be an existing file."
+     exit 2
+  fi
+  
+  echo "Setup directory: $2"
+  mkdir -p "$2"
+  chmod ug+w "$2"
+
+#  fiddirs="case fda omar tmar beam fbl topcore ctac edt fcg fda fix xpfix xphub fdaExch apas doc"
+  for adir in `ls "$1"`  
+  do
+   if [ "X$adir" = "Xsite-specific" ]; then
+      continue
+   fi
+   if [ -d "$1/$adir"  ]; then
+      ln -sf "$1/$adir" "$2/$adir"
+      echo "Create link dir:  $2/$adir"
+      #ls -l "$2/$adir"
+    else
+      echo "Error: unhandled dir: $1/$adir."
+    fi    
+  done  
+
+}
+
+
+################## Main #################
+zipname=fidessa_xpfixout.zip
+dirccms=/usr/local/ccms/fid/fidessa/xpfixout
+dirfidessa=/fidessa/xpfixus
+dirunzip=$dirfidessa/fidimg_unzip
+dirbackup=$dirfidessa/fidimg_backup
+
+if [ ! -d "$dirfidessa"  ]; then
+    echo "Error: directory $dirfidessa does not exist."
+    exit 1
+fi
+
+echo "Fidessa directory free diskspace: "
+echo "`df -h /fidessa`"
+echo
+ 
+echo "Unzip Fidessa Deploy Image: $dirccms/$zipname, it may take a few minutes ... "
+rm -Rf $dirunzip
+mkdir -p $dirunzip
+unzip -q $dirccms/$zipname -d $dirunzip
+if [ $? -ne 0  ]; then
+  echo "Error occured when unzip fidessa deploy image."
+  exit 2
+fi
+
+echo "Cleanup existing backup of fidessa component ..."
+rm -Rf $dirbackup
+mkdir -p $dirbackup
+
+echo "Backup current fidessa code to $dirbackup ..."
+for adir in `ls "$dirunzip"`  
+do
+if [ -d "$dirfidessa/$adir" ]; then
+ echo "  backup $adir"
+ chmod u+w $dirfidessa/$adir
+ mv $dirfidessa/$adir $dirbackup/
+fi  
+done
+
+echo "Deploy new Fidessa code to $dirfidessa ..."
+for adir in `ls "$dirunzip"`  
+do
+ echo "  deploy $adir"
+ mv $dirunzip/$adir $dirfidessa/
+ chmod -R +x $dirfidessa/$adir
+done  
+rm -Rf $dirunzip
+
+# Fidessa component specific, need to review/revise for each release
+# enable update permission
+chmod u+w $dirfidessa/site-specific/cfg/ProcessDetails.cfg
+chmod u+w $dirfidessa/site-specific/cfg/SystemDefinition.cfg
+chmod u+w $dirfidessa/site-specific/cfg/xpfix_SystemDefinition.cfg
+chmod u+w $dirfidessa/site-specific/cfg/xpfix-OUT42_SystemDefinition.cfg
+chmod u+w $dirfidessa/site-specific/cfg/xpfix-OUT42_Destinations.XPFIX_DOMAIN.cfg
+# create soft-links
+
+echo 
+echo "Deployment complete, check above log to see if there is any errors."
+echo
+
+
+
+

@@ -1,0 +1,18 @@
+Cloud build machine:  gdcpl3213
+
+
+#newgrp dp
+setenv TZ "US/Eastern"
+setenv LS_COLORS
+setenv PATH /usr/atria/bin:${PATH}
+source /usr/local/clearquest/*.csh
+alias ct /usr/atria/bin/cleartool
+setenv JAVA_HOME /tools/ver/jdk1.6.0_45
+setenv ANT_HOME /auto/prod/ver/apache/apache-ant-1.7.0
+setenv PATH  $JAVA_HOME/bin:$ANT_HOME/bin:${PATH}
+
+
+/usr/atria/bin/crmregister add -database PRTLB -connection nbos_ucm -username exxxxx -password "xxxxx"
+cleartool mkview -tag exxxxxx_fid_xpfixout_vendor_01.00_int -stream fid_xpfixout_vendor_01.00_integration@/vobs/nbos_pvob04 -stgloc  nbob_viewstore
+cleartool setview  e4xxxxx_fid_xpfixout_vendor_01.00_int 
+cd /vobs/fid01cv/fid_xpfixout_vendor/src
