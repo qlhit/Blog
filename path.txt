@@ -1,3 +1,0 @@
-cd /fidessa/xpfixus
-cd /fidessa
-cd /fidessa/ctac
